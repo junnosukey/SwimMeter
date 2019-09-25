@@ -73,11 +73,12 @@ struct App
 };
 
 static App app;
-static void LF_onPushMain(uint32_t);
-static void LF_onPushPause(uint32_t);
+static void LF_onPush(uint32_t tick);
+static void LF_onRelease(uint32_t tick);
+static void LF_onHold(uint32_t tick);
 
 LiquidCrystal lcd(5, 4, 3, 2, 1, 0);
-TactSwitch btn1;
+TactSwitch btn;
 
 const int pinLcdLed = 6;
 
@@ -95,7 +96,7 @@ void setup()
   pinMode(pinLcdLed, OUTPUT);
 
   // Initialize input port for button
-  btn1.begin(7, 0, nullptr, &LF_onPushMain, &LF_onPushPause, nullptr);
+  btn.begin(7, 0, &LF_onPush, &LF_onRelease, &LF_onHold, nullptr);
 }
 
 static void printDigit(int32_t val)
@@ -184,8 +185,15 @@ static void display(const uint32_t tick)
   }
 }
 
-static void LF_onPushMain(uint32_t tick)
+static uint32_t s_pushTick;
+static void LF_onPush(uint32_t tick)
 {
+  s_pushTick = tick;
+}
+
+static void LF_onRelease(uint32_t tick)
+{
+  tick = s_pushTick;
   switch (app.status)
   {
   case kAppStatusInit:
@@ -218,7 +226,7 @@ static void LF_onPushMain(uint32_t tick)
   app.lcdLedTick = tick;
 }
 
-static void LF_onPushPause(uint32_t tick)
+static void LF_onHold(uint32_t tick)
 {
   switch (app.status)
   {
@@ -269,7 +277,7 @@ static void setLcdLed(uint32_t tick)
 void loop()
 {
   const uint32_t tick = millis();
-  btn1.processTick(tick);
+  btn.processTick(tick);
   display(tick);
   setLcdLed(tick);
 }
